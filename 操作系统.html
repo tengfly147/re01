@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>实验四</title>
+    <style>
+        .item {
+            width: 50px;
+            height: 50px;
+            line-height: 50px;
+            align-items: center;
+            text-align: center;
+            border: 1px solid red;
+
+
+        }
+    </style>
+</head>
+
+<body>
+
+    <div style="position: absolute; left:40px;top:190px;display: inline-block;">
+        <button id="btnAdd">增加驻留集块</button>
+    </div>
+
+    <div style="display: inline-block;position:absolute;left: 200px;top: 20px;">
+
+        <h2 id='titleSuanfa' style="margin-left: 200px;margin-bottom: 20px;">算法</h2>
+        <div style="margin-top: 50px;margin-left: 20px;">
+            访问的页面：
+            <input id="inYemian" />
+            <button id="btnOk">确认</button>
+        </div>
+
+        <div id="order" style="margin-top: 50px;margin-left: 20px;">页面访问顺序：</div>
+
+        <div id="items" style="margin-left: 20px;margin-top: 20px;">
+            驻留集
+            <div id="item0" class="item"></div>
+            <div id="item1" class="item"></div>
+            <div id="item2" class="item"></div>
+        </div>
+        <div style="margin-left: 20px;margin-top: 20px;">
+            <span id="hitShow"></span>
+        </div>
+
+    </div>
+
+
+
+
+
+    <script>
+        var kouling = prompt('1.先入先出算法FIFS\n2.LRU算法（计数实现）\n3.LRU算法（栈实现）\n控制台可查看部分具体过程');
+        var suanfaid = 1;
+
+        var order = document.getElementById("order")
+        //输入框的值 访问的内存块的数字
+        var inYemian = document.getElementById("inYemian")
+        var re = /^[0-9]+.?[0-9]*/;//判断字符串是否为数字//判断正整数/[1−9]+[0−9]∗]∗/ 
+        //算法显示的标题
+        var titleSuanfa = document.getElementById("titleSuanfa");
+        //用户选择的算法id的转换
+        if (re.test(kouling)) {
+            if (suanfaid > '0' && suanfaid < '4') {
+                suanfaid = parseInt(kouling)
+            }
+        }
+        //显示不同的算法的名字
+        switch (suanfaid) {
+            case 1:
+                titleSuanfa.innerText = "1.先入先出算法FIFS"
+                break;
+            case 2:
+                titleSuanfa.innerText = "2.LRU算法（计数实现）"
+                break;
+            case 3:
+                titleSuanfa.innerText = "3.LRU算法（栈实现）"
+                break;
+            default: alert('你的输入有误，请刷新页面重试')
+        }
+
+        //驻留块的数量
+        let idx = 3;
+        //计数用
+        let inIdx = 0;
+        //击中次数
+        let hit = 0;
+        //总数
+        let countN = 0;
+        //访问的顺序
+        var orderArray = []
+        //记录访问的次数 lru的计数实现
+        var orderItems = []
+
+        // lru的栈实现
+        var orderItemsStack = []
+
+        
+        //击中次数的显示的span
+        let hitShow = document.getElementById("hitShow")
+        hitShow.innerHTML = '击中次数：' + hit + '; 总次数：' + countN + '; 击中率：' + 0 + ' 缺页率：' + 0
+        //驻留块放的位置
+        var all = document.getElementById("items")
+        //增加驻留块的按钮和事件
+        var btnadd = document.getElementById("btnAdd")
+        btnadd.addEventListener("click", () => {
+            addDiv('')
+        })
+        var addDiv = function (text) {
+            var oDiv = document.createElement("div");
+
+            oDiv.className = "item"
+            oDiv.id = 'item' + idx;
+            oDiv.innerText = text
+            all.appendChild(oDiv)
+            idx++;
+        }
+
+
+        //增加访问的顺序
+        document.getElementById("btnOk").addEventListener("click", () => {
+            if (re.test(inYemian.value)) {
+                if (order.innerText == '页面访问顺序：') {
+                    order.innerText = order.innerText + inYemian.value;
+                } else {
+                    order.innerText = order.innerText + ' , ' + inYemian.value;
+
+                }
+                //选择不同的算法
+                switch (suanfaid) {
+                    case 1:
+                        insertOrderFF(inYemian.value);
+                        break;
+                    case 2:
+                        insertOrderLRUByCount(inYemian.value);
+                        break;
+                    case 3:
+                        insertOrderLRUByStack(inYemian.value);       
+                        break;
+                    default: alert('你的输入有误，请刷新页面重试')
+                }
+                inYemian.value = ''
+            } else {
+                alert("请输入正确的数字")
+            }
+
+        })
+
+        //lru的栈实现
+        var insertOrderLRUByStack = function (text) {
+            var isIn = getItemValues(orderItemsStack).indexOf(text)
+            var len = getDictLen(orderItemsStack)
+
+            //未击中
+            if (isIn == -1) {
+                if (len < idx) {
+                    //还有空余的内存块
+                    s = 'item' + inIdx;
+                    orderItemsStack[s] = [text];
+
+                    //设置放div中
+                    setTextInDiv(s, text)
+                    inIdx++;
+
+
+                } else {
+                    //没有空余的块则删掉栈头元素 将新的加入队尾
+                    deleteHeadInsertTail(orderItemsStack, text)
+                }
+            } else {
+                //击中hit加一
+                hit++;
+                //将头元素加到尾部
+                swapHeadTail(orderItemsStack, text)
+            }
+            countN++;
+            hitShow.innerHTML = '击中次数：' + hit + ';   总次数：' + countN + ';  击中率：' + hit / countN + ' 缺页率：' + (countN - hit) / countN
+            //可以检测是否满足效果
+            console.log("内存块栈")
+            for (var key in orderItemsStack) {
+
+                console.log(key + "  val=" + orderItemsStack[key][0])
+            }
+            console.log(" ================= ")
+
+        }
+        //删除栈头元素 新加栈尾元素
+
+        var deleteHeadInsertTail = function (orderItemsStack, text) {
+            var firstkey;
+            for (var key in orderItemsStack) {
+                firstkey = key
+                break;
+            }
+            delete orderItemsStack[firstkey]
+
+            orderItemsStack[firstkey] = [text]
+            setTextInDiv(firstkey, text)
+        }
+        //将头元素放到尾部去
+        var swapHeadTail = function (orderItemsStack, text) {
+            var firstkey;
+            for (var key in orderItemsStack) {
+                firstkey = key
+                break;
+            }
+            delete orderItemsStack[firstkey]
+
+            orderItemsStack[firstkey] = [text]
+        }
+
+
+        //lru的计数实现
+        var insertOrderLRUByCount = function (text) {
+            var isIn = getItemValues(orderItems).indexOf(text)
+            var len = getDictLen(orderItems)
+
+            //未击中
+            if (isIn == -1) {
+                if (len < idx) {
+                    //还有空余的内存块
+                    s = 'item' + inIdx;
+
+                    orderItems[s] = [text, 0];
+                    //设置放div中
+                    setTextInDiv(s, text)
+                    inIdx++;
+
+                    updateCountAdd1(orderItems, text)
+                } else {
+                    //拿出最大的那个删除 设置新的 其它的加一
+                    deleteMaxAndInsert(orderItems, text)
+                }
+            } else {
+                //击中hit加一
+                hit++;
+                //count置0
+                updateCount(orderItems, text)
+            }
+            countN++;
+            hitShow.innerHTML = '击中次数：' + hit + ';   总次数：' + countN + ';  击中率：' + hit / countN + ' 缺页率：' + (countN - hit) / countN
+            //可以检测是否满足效果
+            console.log("内存块的计数")
+            for (var key in orderItems) {
+                console.log(key + " 值:" + orderItems[key][0] + ' 计数：' + orderItems[key][1])
+            }
+            console.log('===========================')
+
+
+        }
+        //删除最大的  插入新的  其它的加一
+        var deleteMaxAndInsert = function (orderItems, text) {
+
+            var max = -1;
+            var maxItem;
+            var maxkey;
+            for (var key in orderItems) {
+                if (orderItems[key][1] > max) {
+                    max = orderItems[key][1]
+                    maxItem = orderItems[key]
+                    maxkey = key;
+                }
+            }
+
+
+            orderItems[maxkey] = [text, 0]
+            //设置值进入div
+            setTextInDiv(maxkey, text)
+            //更新其它的加一
+            updateCountAdd1(orderItems, text)
+        }
+        //击中的text置0 其它的加一
+        var updateCount = function (orderItems, text) {
+            for (var key in orderItems) {
+                if (orderItems[key][0] == text) {
+                    orderItems[key][1] = 0
+                }
+            }
+
+            updateCountAdd1(orderItems, text)
+        }
+        //除了text的其它的加一
+        var updateCountAdd1 = function (orderItems, text) {
+            for (var key in orderItems) {
+                if (orderItems[key][0] != text) {
+                    orderItems[key][1]++;
+                }
+            }
+        }
+        //设置div的数据
+        var setTextInDiv = function (divId, text) {
+            document.getElementById(divId).innerText = text;
+        }
+        //获取字典的长度
+        var getDictLen = function (orderItems) {
+            var res = 0
+            for (var key in orderItems) {
+                res++
+            }
+            return res
+        }
+
+        //获取所有的值
+        var getItemValues = function (orderItems) {
+
+            var resarr = []
+            for (var key in orderItems) {
+                resarr.push(orderItems[key][0])
+            }
+            return resarr
+        }
+
+        //FIFS算法
+        var insertOrderFF = function (text) {
+
+
+            var isIn = orderArray.indexOf(text)
+
+
+            if (isIn == -1) {
+                inIdx = inIdx % idx;
+
+                var itemdiv = document.getElementById("item" + inIdx)
+                orderArray.push(text)
+                itemdiv.innerText = text
+                inIdx++;
+            } else {
+                hit++;
+                //如果击中的为当前元素则inIdx++
+
+            }
+            countN++;
+            hitShow.innerHTML = '击中次数：' + hit + ';   总次数：' + countN + ';  击中率：' + hit / countN + ' 缺页率：' + (countN - hit) / countN
+
+
+            if (orderArray.length == idx + 1) {
+                orderArray.shift()
+            }
+
+            
+            console.log("fifs的数组")
+            for (var key in orderArray){
+                console.log(orderArray[key])
+            }
+            console.log(" ================================== ")
+
+
+
+        }
+
+
+
+
+
+
+
+
+    </script>
+</body>
+
+</html>
